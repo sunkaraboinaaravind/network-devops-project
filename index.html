@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="refresh" content="5">
+    <title>Network DevOps Dashboard</title>
+
+    <style>
+        body{
+            font-family: Arial, sans-serif;
+            background:#f4f4f4;
+            margin:40px;
+        }
+
+        .container{
+            background:white;
+            width:500px;
+            margin:auto;
+            padding:20px;
+            border-radius:10px;
+            box-shadow:0px 0px 10px gray;
+        }
+
+        h1{
+            text-align:center;
+            color:#2c3e50;
+        }
+
+        p{
+            font-size:18px;
+        }
+
+        strong{
+            color:#1f618d;
+        }
+    </style>
+
+</head>
+
+<body>
+
+<div class="container">
+
+<h1>Network DevOps Dashboard</h1>
+
+<hr>
+
+<p><strong>Developer:</strong> {{ developer }}</p>
+
+<p><strong>Hostname:</strong> {{ hostname }}</p>
+
+<p><strong>IP Address:</strong> {{ ip_address }}</p>
+
+<p><strong>System Uptime:</strong> {{ uptime }}</p>
+<p>
+    <strong>CPU Usage:</strong>
+    <span style="color: {{ cpu_status }};">
+        {{ cpu_usage }} %
+    </span>
+</p>
+
+<p>
+    <strong>Memory Usage:</strong>
+    <span style="color: {{ memory_status }};">
+        {{ memory_usage }} %
+    </span>
+</p>
+
+<p>
+    <strong>Disk Usage:</strong>
+    <span style="color: {{ disk_status }};">
+        {{ disk_usage }} %
+    </span>
+</p>
+<p><strong>Internet:</strong> {{ internet }}</p>
+
+</div>
+
+</body>
+</html>
