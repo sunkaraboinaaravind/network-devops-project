@@ -17,7 +17,7 @@ pipeline {
         stage('Stop Old Container') {
             steps {
                 sh 'docker rm -f network-devops-dashboard-container || true'
-		sh 'docker ps -q --filter "publish=5000" | xargs -r docker rm -f || true'
+		sh 'docker run -d --name network-devops-dashboard-container --network devops-net -p 5000:5000 network-devops-dashboard'
             }
         }
 
