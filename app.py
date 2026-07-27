@@ -4,12 +4,12 @@ import socket
 import subprocess
 import psutil
 import urllib.request
-from flask import Flask, render_template
+from flask import Flask, render_template, jsonify
 
 app = Flask(__name__)
 
-@app.route('/')
-def system_status():
+
+def get_stats():
     hostname = socket.gethostname()
     ip_address = subprocess.check_output(
         "hostname -I", shell=True
@@ -21,49 +21,46 @@ def system_status():
     uptime_seconds = int(time.time() - boot_time)
     hours = uptime_seconds // 3600
     minutes = (uptime_seconds % 3600) // 60
-    uptime = f"{hours} Hours {minutes} Minutes"
+    uptime = f"{hours}h {minutes}m"
 
     try:
         urllib.request.urlopen("https://www.google.com", timeout=3)
-        internet = "Online ✅"
-    except:
-        internet = "Offline ❌"
+        internet = True
+    except Exception:
+        internet = False
 
-    if cpu_usage < 50:
-        cpu_status = "green"
-    elif cpu_usage < 80:
-        cpu_status = "orange"
-    else:
-        cpu_status = "red"
+    def status_for(value, warn, crit):
+        if value < warn:
+            return "green"
+        elif value < crit:
+            return "amber"
+        else:
+            return "red"
 
-    if memory_usage < 50:
-        memory_status = "green"
-    elif memory_usage < 80:
-        memory_status = "orange"
-    else:
-        memory_status = "red"
+    return {
+        "developer": "Sunka",
+        "hostname": hostname,
+        "ip_address": ip_address,
+        "cpu_usage": cpu_usage,
+        "memory_usage": memory_usage,
+        "disk_usage": disk_usage,
+        "internet": internet,
+        "cpu_status": status_for(cpu_usage, 50, 80),
+        "memory_status": status_for(memory_usage, 50, 80),
+        "disk_status": status_for(disk_usage, 70, 90),
+        "uptime": uptime,
+    }
 
-    if disk_usage < 70:
-        disk_status = "green"
-    elif disk_usage < 90:
-        disk_status = "orange"
-    else:
-        disk_status = "red"
 
-    return render_template(
-        "index.html",
-        developer="Sunka",
-        hostname=hostname,
-        ip_address=ip_address,
-        cpu_usage=cpu_usage,
-        memory_usage=memory_usage,
-        disk_usage=disk_usage,
-        internet=internet,
-        cpu_status=cpu_status,
-        memory_status=memory_status,
-        uptime=uptime,
-        disk_status=disk_status
-    )
+@app.route('/')
+def system_status():
+    return render_template("index.html", stats=get_stats())
+
+
+@app.route('/api/stats')
+def api_stats():
+    return jsonify(get_stats())
+
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)

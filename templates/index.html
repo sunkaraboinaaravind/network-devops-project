@@ -1,63 +1,337 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Network DevOps Dashboard</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Network DevOps :: {{ stats.hostname }}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0B0F12;
+    --panel:#12181C;
+    --panel-border:#1E262B;
+    --text:#E6EDF0;
+    --muted:#7C8B93;
+    --green:#3ECF8E;
+    --amber:#F5A623;
+    --red:#FF5D5D;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--text);
+    font-family:'JetBrains Mono', monospace;
+    padding:32px 20px 60px;
+    min-height:100vh;
+  }
+  a{color:inherit;}
 
-    <style>
-        body{
-            font-family: Arial, sans-serif;
-            background:#f4f4f4;
-            margin:40px;
-        }
+  .wrap{
+    max-width:920px;
+    margin:0 auto;
+  }
 
-        .container{
-            background:white;
-            width:500px;
-            margin:auto;
-            padding:20px;
-            border-radius:10px;
-            box-shadow:0px 0px 10px gray;
-        }
+  /* Header */
+  .header{
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-end;
+    border-bottom:1px solid var(--panel-border);
+    padding-bottom:18px;
+    margin-bottom:28px;
+  }
+  .eyebrow{
+    font-size:11px;
+    letter-spacing:3px;
+    color:var(--muted);
+    text-transform:uppercase;
+    margin-bottom:6px;
+  }
+  .title{
+    font-size:26px;
+    font-weight:700;
+    letter-spacing:-0.5px;
+  }
+  .title span{color:var(--green);}
+  .header-right{
+    text-align:right;
+    font-size:13px;
+    color:var(--muted);
+  }
+  .pulse-row{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    justify-content:flex-end;
+    margin-bottom:6px;
+  }
+  .pulse-dot{
+    width:9px;height:9px;border-radius:50%;
+    background:var(--green);
+    box-shadow:0 0 0 0 rgba(62,207,142,0.6);
+    animation:pulse 2s infinite;
+  }
+  .pulse-dot.offline{background:var(--red);box-shadow:0 0 0 0 rgba(255,93,93,0.6);animation:pulseRed 2s infinite;}
+  @keyframes pulse{
+    0%{box-shadow:0 0 0 0 rgba(62,207,142,0.55);}
+    70%{box-shadow:0 0 0 8px rgba(62,207,142,0);}
+    100%{box-shadow:0 0 0 0 rgba(62,207,142,0);}
+  }
+  @keyframes pulseRed{
+    0%{box-shadow:0 0 0 0 rgba(255,93,93,0.55);}
+    70%{box-shadow:0 0 0 8px rgba(255,93,93,0);}
+    100%{box-shadow:0 0 0 0 rgba(255,93,93,0);}
+  }
+  #clock{font-size:13px;color:var(--text);}
 
-        h1{
-            text-align:center;
-            color:#2c3e50;
-        }
+  /* Grid */
+  .grid{
+    display:grid;
+    grid-template-columns:repeat(3, 1fr);
+    gap:14px;
+  }
+  @media(max-width:720px){
+    .grid{grid-template-columns:1fr;}
+    .identity{grid-column:span 1 !important;}
+  }
 
-        p{
-            font-size:18px;
-        }
+  .card{
+    background:var(--panel);
+    border:1px solid var(--panel-border);
+    border-radius:10px;
+    padding:18px 20px;
+  }
+  .card-label{
+    font-size:11px;
+    letter-spacing:2px;
+    text-transform:uppercase;
+    color:var(--muted);
+    margin-bottom:10px;
+  }
 
-        strong{
-            color:#1f618d;
-        }
-    </style>
+  /* Identity card */
+  .identity{grid-column:span 3;display:flex;justify-content:space-between;flex-wrap:wrap;gap:16px;}
+  .id-item .id-label{font-size:11px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:4px;}
+  .id-item .id-value{font-size:15px;font-weight:600;}
 
+  /* Metric cards */
+  .metric-value{
+    font-size:32px;
+    font-weight:700;
+    line-height:1;
+    margin-bottom:14px;
+  }
+  .metric-value.green{color:var(--green);}
+  .metric-value.amber{color:var(--amber);}
+  .metric-value.red{color:var(--red);}
+
+  .bar-track{
+    width:100%;
+    height:6px;
+    background:#1B2226;
+    border-radius:3px;
+    overflow:hidden;
+  }
+  .bar-fill{
+    height:100%;
+    border-radius:3px;
+    transition:width 0.6s ease, background 0.6s ease;
+  }
+  .bar-fill.green{background:var(--green);}
+  .bar-fill.amber{background:var(--amber);}
+  .bar-fill.red{background:var(--red);}
+
+  .sparkline{margin-top:12px;display:block;}
+
+  /* Status cards row */
+  .status-row{grid-column:span 3;display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+  .uptime-value{font-size:22px;font-weight:700;}
+  .net-pill{
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    font-size:14px;
+    font-weight:600;
+    padding:6px 12px;
+    border-radius:20px;
+    background:rgba(62,207,142,0.12);
+    color:var(--green);
+  }
+  .net-pill.offline{background:rgba(255,93,93,0.12);color:var(--red);}
+  .net-pill .dot{width:7px;height:7px;border-radius:50%;background:currentColor;}
+
+  footer{
+    text-align:center;
+    color:var(--muted);
+    font-size:11px;
+    margin-top:32px;
+    letter-spacing:1px;
+  }
+</style>
 </head>
-
 <body>
+<div class="wrap">
 
-<div class="container">
+  <div class="header">
+    <div>
+      <div class="eyebrow">System Monitor</div>
+      <div class="title">network<span>-devops</span>-dashboard</div>
+    </div>
+    <div class="header-right">
+      <div class="pulse-row">
+        <span class="pulse-dot" id="pulseDot"></span>
+        <span id="pulseLabel">live</span>
+      </div>
+      <div id="clock">--:--:--</div>
+    </div>
+  </div>
 
-<h1>Network DevOps Dashboard</h1>
+  <div class="grid">
 
-<hr>
+    <div class="card identity">
+      <div class="id-item">
+        <div class="id-label">Developer</div>
+        <div class="id-value">{{ stats.developer }}</div>
+      </div>
+      <div class="id-item">
+        <div class="id-label">Hostname</div>
+        <div class="id-value" id="hostname">{{ stats.hostname }}</div>
+      </div>
+      <div class="id-item">
+        <div class="id-label">IP Address</div>
+        <div class="id-value" id="ipAddress">{{ stats.ip_address }}</div>
+      </div>
+    </div>
 
-<p><strong>Developer:</strong> {{ developer }}</p>
+    <div class="card">
+      <div class="card-label">CPU Usage</div>
+      <div class="metric-value {{ stats.cpu_status }}" id="cpuValue">{{ stats.cpu_usage }}%</div>
+      <div class="bar-track"><div class="bar-fill {{ stats.cpu_status }}" id="cpuBar" style="width:{{ stats.cpu_usage }}%"></div></div>
+      <canvas class="sparkline" id="cpuSpark" width="220" height="36"></canvas>
+    </div>
 
-<p><strong>Hostname:</strong> {{ hostname }}</p>
+    <div class="card">
+      <div class="card-label">Memory Usage</div>
+      <div class="metric-value {{ stats.memory_status }}" id="memValue">{{ stats.memory_usage }}%</div>
+      <div class="bar-track"><div class="bar-fill {{ stats.memory_status }}" id="memBar" style="width:{{ stats.memory_usage }}%"></div></div>
+    </div>
 
-<p><strong>IP Address:</strong> {{ ip_address }}</p>
+    <div class="card">
+      <div class="card-label">Disk Usage</div>
+      <div class="metric-value {{ stats.disk_status }}" id="diskValue">{{ stats.disk_usage }}%</div>
+      <div class="bar-track"><div class="bar-fill {{ stats.disk_status }}" id="diskBar" style="width:{{ stats.disk_usage }}%"></div></div>
+    </div>
 
-<p><strong>CPU Usage:</strong> {{ cpu_usage }} %</p>
+    <div class="status-row">
+      <div class="card">
+        <div class="card-label">Uptime</div>
+        <div class="uptime-value" id="uptimeValue">{{ stats.uptime }}</div>
+      </div>
+      <div class="card">
+        <div class="card-label">Internet</div>
+        <span class="net-pill {{ '' if stats.internet else 'offline' }}" id="netPill">
+          <span class="dot"></span>
+          <span id="netLabel">{{ 'Online' if stats.internet else 'Offline' }}</span>
+        </span>
+      </div>
+    </div>
 
-<p><strong>Memory Usage:</strong> {{ memory_usage }} %</p>
+  </div>
 
-<p><strong>Disk Usage:</strong> {{ disk_usage }} %</p>
-
-<p><strong>Internet:</strong> {{ internet }}</p>
-
+  <footer>refreshing every 3s &middot; last update <span id="lastUpdate">just now</span></footer>
 </div>
 
+<script>
+const cpuHistory = [];
+const MAX_POINTS = 30;
+
+function statusClass(value, warn, crit){
+  if(value < warn) return 'green';
+  if(value < crit) return 'amber';
+  return 'red';
+}
+
+function drawSparkline(history){
+  const canvas = document.getElementById('cpuSpark');
+  const ctx = canvas.getContext('2d');
+  const w = canvas.width, h = canvas.height;
+  ctx.clearRect(0,0,w,h);
+  if(history.length < 2) return;
+  const max = 100;
+  ctx.beginPath();
+  history.forEach((v,i)=>{
+    const x = (i/(MAX_POINTS-1)) * w;
+    const y = h - (v/max)*h;
+    if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+  });
+  ctx.strokeStyle = '#3ECF8E';
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+}
+
+function updateClock(){
+  const now = new Date();
+  document.getElementById('clock').textContent = now.toLocaleTimeString('en-GB');
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+function applyStats(s){
+  document.getElementById('hostname').textContent = s.hostname;
+  document.getElementById('ipAddress').textContent = s.ip_address;
+
+  document.getElementById('cpuValue').textContent = s.cpu_usage + '%';
+  document.getElementById('cpuValue').className = 'metric-value ' + s.cpu_status;
+  document.getElementById('cpuBar').style.width = s.cpu_usage + '%';
+  document.getElementById('cpuBar').className = 'bar-fill ' + s.cpu_status;
+
+  document.getElementById('memValue').textContent = s.memory_usage + '%';
+  document.getElementById('memValue').className = 'metric-value ' + s.memory_status;
+  document.getElementById('memBar').style.width = s.memory_usage + '%';
+  document.getElementById('memBar').className = 'bar-fill ' + s.memory_status;
+
+  document.getElementById('diskValue').textContent = s.disk_usage + '%';
+  document.getElementById('diskValue').className = 'metric-value ' + s.disk_status;
+  document.getElementById('diskBar').style.width = s.disk_usage + '%';
+  document.getElementById('diskBar').className = 'bar-fill ' + s.disk_status;
+
+  document.getElementById('uptimeValue').textContent = s.uptime;
+
+  const pill = document.getElementById('netPill');
+  const label = document.getElementById('netLabel');
+  const pulseDot = document.getElementById('pulseDot');
+  if(s.internet){
+    pill.classList.remove('offline');
+    label.textContent = 'Online';
+    pulseDot.classList.remove('offline');
+  } else {
+    pill.classList.add('offline');
+    label.textContent = 'Offline';
+    pulseDot.classList.add('offline');
+  }
+
+  cpuHistory.push(s.cpu_usage);
+  if(cpuHistory.length > MAX_POINTS) cpuHistory.shift();
+  drawSparkline(cpuHistory);
+
+  document.getElementById('lastUpdate').textContent = new Date().toLocaleTimeString('en-GB');
+}
+
+async function refresh(){
+  try{
+    const res = await fetch('/api/stats');
+    const data = await res.json();
+    applyStats(data);
+  }catch(e){
+    document.getElementById('pulseDot').classList.add('offline');
+    document.getElementById('pulseLabel').textContent = 'unreachable';
+  }
+}
+
+cpuHistory.push({{ stats.cpu_usage }});
+setInterval(refresh, 3000);
+</script>
 </body>
 </html>
