@@ -3,6 +3,7 @@ import os
 import socket
 import subprocess
 import psutil
+import urllib.request
 from flask import Flask, render_template
 
 app = Flask(__name__)
@@ -22,10 +23,10 @@ def system_status():
     minutes = (uptime_seconds % 3600) // 60
     uptime = f"{hours} Hours {minutes} Minutes"
 
-    response = os.system("ping -c 1 8.8.8.8 > /dev/null 2>&1")
-    if response == 0:
+    try:
+        urllib.request.urlopen("https://www.google.com", timeout=3)
         internet = "Online ✅"
-    else:
+    except:
         internet = "Offline ❌"
 
     if cpu_usage < 50:
@@ -66,6 +67,3 @@ def system_status():
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
-# auto-trigger test
-# auto-trigger test
-# verify nginx binding after rebuild
